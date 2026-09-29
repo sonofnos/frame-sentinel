@@ -37,7 +37,9 @@ pub fn summary(scan: &Scan) -> String {
 		scan.pallets
 	);
 	for ((id, name), [low, medium, high]) in by_rule {
-		out.push_str(&format!("  {id} {name:<22} high {high:>4}  medium {medium:>4}  low {low:>4}\n"));
+		out.push_str(&format!(
+			"  {id} {name:<22} high {high:>4}  medium {medium:>4}  low {low:>4}\n"
+		));
 	}
 	for (path, err) in &scan.parse_errors {
 		out.push_str(&format!("  could not parse {}: {err}\n", path.display()));

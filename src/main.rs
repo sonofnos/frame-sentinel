@@ -48,7 +48,9 @@ fn main() -> ExitCode {
 				print!("{USAGE}");
 				return ExitCode::SUCCESS;
 			},
-			flag if flag.starts_with("--") => return usage_error(&format!("unknown flag `{flag}`")),
+			flag if flag.starts_with("--") => {
+				return usage_error(&format!("unknown flag `{flag}`"))
+			},
 			path => paths.push(PathBuf::from(path)),
 		}
 	}

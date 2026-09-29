@@ -39,7 +39,8 @@ pub struct Finding {
 	pub snippet: String,
 }
 
-const HOOKS: [&str; 5] = ["on_initialize", "on_finalize", "on_idle", "on_poll", "on_runtime_upgrade"];
+const HOOKS: [&str; 5] =
+	["on_initialize", "on_finalize", "on_idle", "on_poll", "on_runtime_upgrade"];
 
 /// Functions that only run in tests, benchmarks, try-runtime or at genesis, where a panic is
 /// the intended failure mode.
@@ -136,8 +137,11 @@ impl<'a> Analyzer<'a> {
 			return;
 		}
 		let (scope, function) = self.current();
-		let snippet =
-			self.lines.get(start.line.wrapping_sub(1)).map(|l| l.trim().to_string()).unwrap_or_default();
+		let snippet = self
+			.lines
+			.get(start.line.wrapping_sub(1))
+			.map(|l| l.trim().to_string())
+			.unwrap_or_default();
 		self.findings.push(Finding {
 			rule: rule.id,
 			name: rule.name,
@@ -169,9 +173,9 @@ impl<'a> Analyzer<'a> {
 		};
 		let body = f.block.to_token_stream().to_string();
 		let checked = ORIGIN_CHECKS.iter().any(|c| body.contains(c));
-		let used = origin_name != "_" &&
-			!origin_name.starts_with('_') &&
-			body.split(|c: char| !c.is_alphanumeric() && c != '_').any(|t| t == origin_name);
+		let used = origin_name != "_"
+			&& !origin_name.starts_with('_')
+			&& body.split(|c: char| !c.is_alphanumeric() && c != '_').any(|t| t == origin_name);
 		if !checked && !used {
 			let name = f.sig.ident.to_string();
 			self.report(
@@ -243,12 +247,12 @@ fn is_exempt(attrs: &[Attribute]) -> bool {
 			return false;
 		}
 		let cfg = a.meta.to_token_stream().to_string().replace(' ', "");
-		!cfg.contains("not(") &&
-			(cfg.contains("(test") ||
-				cfg.contains(",test") ||
-				cfg.contains("runtime-benchmarks") ||
-				cfg.contains("try-runtime") ||
-				cfg.contains("feature=\"std\""))
+		!cfg.contains("not(")
+			&& (cfg.contains("(test")
+				|| cfg.contains(",test")
+				|| cfg.contains("runtime-benchmarks")
+				|| cfg.contains("try-runtime")
+				|| cfg.contains("feature=\"std\""))
 	})
 }
 
@@ -269,10 +273,10 @@ fn is_zero_weight(expr: &Expr) -> bool {
 		return true;
 	}
 	let text = expr.to_token_stream().to_string().replace(' ', "");
-	text == "Weight::zero()" ||
-		text.ends_with("Weight::from_parts(0,0)") ||
-		text.starts_with("(0,") ||
-		text.starts_with("(Weight::zero(),")
+	text == "Weight::zero()"
+		|| text.ends_with("Weight::from_parts(0,0)")
+		|| text.starts_with("(0,")
+		|| text.starts_with("(Weight::zero(),")
 }
 
 impl<'ast> Visit<'ast> for Analyzer<'_> {
@@ -375,7 +379,12 @@ impl<'ast> Visit<'ast> for Analyzer<'_> {
 		let method = m.method.to_string();
 		if method == "unwrap" || method == "expect" {
 			let severity = self.by_scope(Severity::High, Severity::Medium);
-			self.report(rules::PANIC, severity, m.method.span(), format!("`.{method}()` can panic"));
+			self.report(
+				rules::PANIC,
+				severity,
+				m.method.span(),
+				format!("`.{method}()` can panic"),
+			);
 		}
 		visit::visit_expr_method_call(self, m);
 	}
@@ -384,12 +393,13 @@ impl<'ast> Visit<'ast> for Analyzer<'_> {
 		if let Expr::Path(p) = &*c.func {
 			let segs: Vec<String> = p.path.segments.iter().map(|s| s.ident.to_string()).collect();
 			if let [.., owner, last] = segs.as_slice() {
-				let iterates = ITER_FNS.contains(&last.as_str()) && self.storage_items.contains(owner);
-				let clears_all = (last == "remove_all" &&
-					c.args.first().map(|a| a.to_token_stream().to_string()) ==
-						Some("None".into())) ||
-					((last == "clear" || last == "clear_prefix") &&
-						c.args.iter().any(|a| {
+				let iterates =
+					ITER_FNS.contains(&last.as_str()) && self.storage_items.contains(owner);
+				let clears_all = (last == "remove_all"
+					&& c.args.first().map(|a| a.to_token_stream().to_string())
+						== Some("None".into()))
+					|| ((last == "clear" || last == "clear_prefix")
+						&& c.args.iter().any(|a| {
 							a.to_token_stream().to_string().replace(' ', "") == "u32::MAX"
 						}));
 				if iterates || (clears_all && self.storage_items.contains(owner)) {
@@ -404,8 +414,8 @@ impl<'ast> Visit<'ast> for Analyzer<'_> {
 						format!("`{owner}::{last}` walks the whole storage item"),
 					);
 				}
-				if (last == "random" || last == "random_seed") &&
-					segs.iter().any(|s| s.contains("Randomness"))
+				if (last == "random" || last == "random_seed")
+					&& segs.iter().any(|s| s.contains("Randomness"))
 				{
 					self.report(
 						rules::RANDOMNESS,

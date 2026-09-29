@@ -90,7 +90,8 @@ fn non_pallet_crates_are_skipped_unless_asked() {
 	let dir = std::env::temp_dir().join(format!("sentinel-plain-{}", std::process::id()));
 	std::fs::create_dir_all(dir.join("src")).unwrap();
 	std::fs::write(dir.join("Cargo.toml"), "[package]\nname = \"q\"\n").unwrap();
-	std::fs::write(dir.join("src/lib.rs"), "pub fn f(x: Option<u8>) -> u8 { x.unwrap() }\n").unwrap();
+	std::fs::write(dir.join("src/lib.rs"), "pub fn f(x: Option<u8>) -> u8 { x.unwrap() }\n")
+		.unwrap();
 
 	let default = scan(&[dir.clone()], Options::default());
 	let all = scan(&[dir.clone()], Options { all_crates: true });

@@ -106,9 +106,9 @@ pub fn scan(paths: &[PathBuf], opts: Options) -> Scan {
 }
 
 fn declares_pallet(source: &str) -> bool {
-	source.contains("#[frame_support::pallet") ||
-		source.contains("#[frame::pallet") ||
-		source.contains("#[pallet::pallet]")
+	source.contains("#[frame_support::pallet")
+		|| source.contains("#[frame::pallet")
+		|| source.contains("#[pallet::pallet]")
 }
 
 fn collect_rs(path: &Path, out: &mut Vec<PathBuf>) {
@@ -127,9 +127,9 @@ fn collect_rs(path: &Path, out: &mut Vec<PathBuf>) {
 			if !SKIP_DIRS.contains(&name.as_str()) && !name.starts_with('.') {
 				collect_rs(&entry, out);
 			}
-		} else if entry.extension().is_some_and(|e| e == "rs") &&
-			!SKIP_FILES.contains(&name.as_str()) &&
-			!name.ends_with("_tests.rs")
+		} else if entry.extension().is_some_and(|e| e == "rs")
+			&& !SKIP_FILES.contains(&name.as_str())
+			&& !name.ends_with("_tests.rs")
 		{
 			out.push(entry);
 		}
