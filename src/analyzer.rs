@@ -343,7 +343,7 @@ fn has_pallet_attr(attrs: &[Attribute], name: &str) -> bool {
 
 /// `#[cfg(test)]`, `#[cfg(feature = "runtime-benchmarks")]`, `#[cfg(feature = "try-runtime")]`,
 /// `#[cfg(feature = "std")]`, `#[test]`: code that never runs inside the on-chain runtime.
-fn is_exempt(attrs: &[Attribute]) -> bool {
+pub fn is_exempt(attrs: &[Attribute]) -> bool {
 	attrs.iter().any(|a| {
 		if a.path().is_ident("test") {
 			return true;
@@ -496,6 +496,12 @@ impl<'ast> Visit<'ast> for Analyzer<'_> {
 	fn visit_item_const(&mut self, _: &'ast syn::ItemConst) {
 		// Evaluated at compile time: a panic there is a build error, not a runtime one.
 	}
+
+	fn visit_impl_item_const(&mut self, _: &'ast syn::ImplItemConst) {
+		// Same for associated constants.
+	}
+
+	fn visit_trait_item_const(&mut self, _: &'ast syn::TraitItemConst) {}
 
 	fn visit_expr_method_call(&mut self, m: &'ast syn::ExprMethodCall) {
 		let method = m.method.to_string();

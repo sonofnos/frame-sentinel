@@ -113,10 +113,15 @@ pub fn scan(paths: &[PathBuf], opts: Options) -> Scan {
 		out.pallets += usize::from(is_pallet);
 
 		let mut storage = HashSet::new();
-		for (_, _, ast) in &parsed {
+		let mut gated = Vec::new();
+		for (path, _, ast) in &parsed {
 			storage.extend(analyzer::storage_items(ast));
+			gated.extend(gated_module_paths(path, ast));
 		}
 		for (path, source, ast) in &parsed {
+			if gated.iter().any(|g| path.starts_with(g) || path == &g.with_extension("rs")) {
+				continue;
+			}
 			out.files += 1;
 			let shown = path.to_string_lossy();
 			out.findings.extend(analyze_parsed(&shown, source, ast, &storage));
@@ -126,6 +131,28 @@ pub fn scan(paths: &[PathBuf], opts: Options) -> Scan {
 		b.severity.cmp(&a.severity).then(a.file.cmp(&b.file)).then(a.line.cmp(&b.line))
 	});
 	out
+}
+
+/// Files of modules declared behind a test/benchmark/try-runtime/std `cfg`, such as
+/// `#[cfg(feature = "runtime-benchmarks")] mod call_builder;`. Returned without extension:
+/// `dir/call_builder` covers both `dir/call_builder.rs` and `dir/call_builder/`.
+fn gated_module_paths(file: &Path, ast: &syn::File) -> Vec<PathBuf> {
+	let Some(dir) = file.parent() else { return Vec::new() };
+	let stem = file.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+	let base = if matches!(stem.as_str(), "lib" | "main" | "mod") {
+		dir.to_path_buf()
+	} else {
+		dir.join(&stem)
+	};
+	ast.items
+		.iter()
+		.filter_map(|item| match item {
+			syn::Item::Mod(m) if m.content.is_none() && analyzer::is_exempt(&m.attrs) => {
+				Some(base.join(m.ident.to_string()))
+			},
+			_ => None,
+		})
+		.collect()
 }
 
 fn declares_pallet(source: &str) -> bool {
@@ -154,6 +181,7 @@ fn collect_rs(path: &Path, out: &mut Vec<PathBuf>) {
 			&& !SKIP_FILES.contains(&name.as_str())
 			&& !name.ends_with("_tests.rs")
 			&& !name.ends_with("_test.rs")
+			&& !name.starts_with("mock")
 		{
 			out.push(entry);
 		}

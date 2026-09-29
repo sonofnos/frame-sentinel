@@ -17,6 +17,10 @@ pub mod pallet {
 
 	const HALF: u64 = u64::MAX / 2 + 1;
 
+	impl<T: Config> Pallet<T> {
+		const ONE: core::num::NonZeroU32 = core::num::NonZeroU32::new(1).unwrap();
+	}
+
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn integrity_test() {

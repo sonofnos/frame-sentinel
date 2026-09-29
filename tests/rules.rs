@@ -146,3 +146,29 @@ fn hardened_escrow_is_clean() {
 	let findings = analyze_source(&path, &source).expect("fixture parses");
 	assert!(findings.is_empty(), "{findings:#?}");
 }
+
+#[test]
+fn modules_behind_benchmark_or_test_cfg_are_skipped() {
+	let dir = std::env::temp_dir().join(format!("sentinel-gated-{}", std::process::id()));
+	let src = dir.join("src");
+	std::fs::create_dir_all(src.join("nested")).unwrap();
+	std::fs::write(dir.join("Cargo.toml"), "[package]\nname = \"g\"\n").unwrap();
+	std::fs::write(
+		src.join("lib.rs"),
+		"#[frame_support::pallet]\npub mod pallet {}\n\
+		 #[cfg(feature = \"runtime-benchmarks\")]\nmod call_builder;\n\
+		 #[cfg(any(test, feature = \"try-runtime\"))]\nmod nested;\nmod live;\n",
+	)
+	.unwrap();
+	let panics = "pub fn f(x: Option<u8>) -> u8 { x.unwrap() }\n";
+	std::fs::write(src.join("call_builder.rs"), panics).unwrap();
+	std::fs::write(src.join("nested/mod.rs"), panics).unwrap();
+	std::fs::write(src.join("mock_ext.rs"), panics).unwrap();
+	std::fs::write(src.join("live.rs"), panics).unwrap();
+
+	let result = scan(std::slice::from_ref(&dir), Options::default());
+	std::fs::remove_dir_all(&dir).ok();
+	let files: Vec<_> =
+		result.findings.iter().map(|f| f.file.rsplit('/').next().unwrap()).collect();
+	assert_eq!(files, vec!["live.rs"], "{:#?}", result.findings);
+}
