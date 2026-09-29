@@ -1,4 +1,4 @@
-// Fixture: every line that must be reported carries `expect: <rule>` markers. Every other line
+// Fixture: every line that must be reported carries an "expect" marker naming the rule. Every other line
 // must stay clean. The file only has to parse, not compile.
 
 #[frame_support::pallet]
