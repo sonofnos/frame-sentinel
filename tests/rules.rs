@@ -122,3 +122,27 @@ fn sarif_output_is_well_formed() {
 		assert!(r["locations"][0]["physicalLocation"]["region"]["startLine"].as_u64().unwrap() > 0);
 	}
 }
+
+/// The audit target from github.com/sonofnos/pallet-escrow. Static analysis should find its
+/// panic, arithmetic, bounds and weight problems; its authorisation bugs are logic errors that
+/// only the spec-oracle harness in that repository catches.
+#[test]
+fn escrow_audit_target() {
+	let (path, source) = fixture("escrow_v0.rs");
+	let findings = analyze_source(&path, &source).expect("fixture parses");
+	let mut counts = std::collections::BTreeMap::new();
+	for f in &findings {
+		*counts.entry(f.rule).or_insert(0) += 1;
+	}
+	let want = [("FS001", 1), ("FS002", 4), ("FS004", 1), ("FS006", 4), ("FS008", 1)];
+	assert_eq!(counts, want.into_iter().collect(), "{findings:#?}");
+	let unwrap = findings.iter().find(|f| f.rule == "FS001").unwrap();
+	assert_eq!((unwrap.function.as_deref(), unwrap.severity), (Some("release"), Severity::High));
+}
+
+#[test]
+fn hardened_escrow_is_clean() {
+	let (path, source) = fixture("escrow_hardened.rs");
+	let findings = analyze_source(&path, &source).expect("fixture parses");
+	assert!(findings.is_empty(), "{findings:#?}");
+}
