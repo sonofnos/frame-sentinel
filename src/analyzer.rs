@@ -60,9 +60,19 @@ fn is_exempt_fn(name: &str) -> bool {
 	EXEMPT_FN_PREFIXES.iter().any(|p| name.starts_with(p))
 }
 
-/// Doc-comment phrases that say a dispatchable is meant to be callable by anyone.
-const PERMISSIONLESS_DOCS: [&str; 6] =
-	["any origin", "anyone", "any account", "permissionless", "any signed", "origin: any"];
+/// Doc-comment phrases that say a dispatchable is meant to be callable by anyone. Taken from
+/// how polkadot-sdk documents its own permissionless calls.
+const PERMISSIONLESS_DOCS: [&str; 9] = [
+	"any origin",
+	"any kind of origin",
+	"every origin",
+	"all origins",
+	"anyone",
+	"any account",
+	"permissionless",
+	"any signed",
+	"origin: any",
+];
 
 const PANIC_MACROS: [&str; 7] =
 	["panic", "unreachable", "todo", "unimplemented", "assert", "assert_eq", "assert_ne"];
@@ -187,6 +197,13 @@ impl<'a> Analyzer<'a> {
 			Pat::Wild(_) => "_".to_string(),
 			_ => return,
 		};
+		// A call whose whole body is `Err(..)` cannot do anything, whoever calls it; such calls
+		// exist so a transaction extension can rewrite them (e.g. `pallet_revive::eth_transact`).
+		if let [syn::Stmt::Expr(Expr::Call(c), None)] = f.block.stmts.as_slice() {
+			if matches!(&*c.func, Expr::Path(p) if p.path.is_ident("Err")) {
+				return;
+			}
+		}
 		let body = f.block.to_token_stream().to_string();
 		let checked = ORIGIN_CHECKS.iter().any(|c| body.contains(c));
 		let used = origin_name != "_"
@@ -194,7 +211,7 @@ impl<'a> Analyzer<'a> {
 			&& body.split(|c: char| !c.is_alphanumeric() && c != '_').any(|t| t == origin_name);
 		if !checked && !used {
 			let name = f.sig.ident.to_string();
-			let docs = doc_text(&f.attrs).to_lowercase();
+			let docs = doc_text(&f.attrs).to_lowercase().replace('`', "");
 			if PERMISSIONLESS_DOCS.iter().any(|p| docs.contains(p)) {
 				self.report(
 					rules::ORIGIN,

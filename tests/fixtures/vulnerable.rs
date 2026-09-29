@@ -85,7 +85,7 @@ pub mod pallet {
 			Self::do_delegated(origin)
 		}
 
-		/// Remove an expired score. Can be called by anyone once the score has expired.
+		/// Remove an expired score. Can be executed by every `origin` once the score has expired.
 		#[pallet::call_index(5)]
 		#[pallet::weight(T::WeightInfo::reap())]
 		pub fn reap(_origin: OriginFor<T>, who: T::AccountId) -> DispatchResult { // expect: FS005

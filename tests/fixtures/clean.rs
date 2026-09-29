@@ -72,6 +72,13 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Placeholder rewritten by a transaction extension; never dispatched directly.
+		#[pallet::call_index(3)]
+		#[pallet::weight(Weight::MAX)]
+		pub fn wrapped(origin: OriginFor<T>, payload: Vec<u8>) -> DispatchResult {
+			Err(Error::<T>::NotDirectlyCallable.into())
+		}
+
 		#[pallet::call_index(2)]
 		#[pallet::weight(T::WeightInfo::known())]
 		pub fn known(origin: OriginFor<T>, idx: u32) -> DispatchResult {
