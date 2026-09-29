@@ -84,7 +84,7 @@ fn storage_declared_in_another_file_is_recognised() {
 	// Test files in the crate are skipped entirely.
 	std::fs::write(src.join("tests.rs"), "fn t() { None::<u8>.unwrap(); }\n").unwrap();
 
-	let result = scan(&[dir.clone()], Options::default());
+	let result = scan(std::slice::from_ref(&dir), Options::default());
 	std::fs::remove_dir_all(&dir).ok();
 	let rules: Vec<_> = result.findings.iter().map(|f| (f.rule, f.line)).collect();
 	assert_eq!(rules, vec![("FS007", 3)], "{:#?}", result.findings);
@@ -99,8 +99,8 @@ fn non_pallet_crates_are_skipped_unless_asked() {
 	std::fs::write(dir.join("src/lib.rs"), "pub fn f(x: Option<u8>) -> u8 { x.unwrap() }\n")
 		.unwrap();
 
-	let default = scan(&[dir.clone()], Options::default());
-	let all = scan(&[dir.clone()], Options { all_crates: true });
+	let default = scan(std::slice::from_ref(&dir), Options::default());
+	let all = scan(std::slice::from_ref(&dir), Options { all_crates: true });
 	std::fs::remove_dir_all(&dir).ok();
 	assert!(default.findings.is_empty());
 	assert_eq!(all.findings.len(), 1);
