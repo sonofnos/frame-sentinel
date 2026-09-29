@@ -4,9 +4,9 @@ Static analysis for [Polkadot SDK](https://github.com/paritytech/polkadot-sdk) F
 
 ```
 $ frame-sentinel pallets/escrow-v0
-pallets/escrow-v0/src/lib.rs:111:36: high FS001 [runtime-panic] in `release`: `.unwrap()` can panic
+pallets/escrow-v0/src/lib.rs:119:43: high FS001 [runtime-panic] in `release`: `.unwrap()` can panic
     let mut escrow = Escrows::<T>::get(id).unwrap();
-pallets/escrow-v0/src/lib.rs:31:2: medium FS004 [unbounded-storage]: pallet opts out of storage bounds with `without_storage_info`
+pallets/escrow-v0/src/lib.rs:30:2: medium FS004 [unbounded-storage]: pallet opts out of storage bounds with `without_storage_info`
     #[pallet::without_storage_info]
 ...
 ```
