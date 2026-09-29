@@ -57,6 +57,12 @@ fn severity_depends_on_where_code_runs() {
 	assert_eq!(find("FS007", "on_initialize").severity, Severity::High);
 	assert_eq!(find("FS007", "on_initialize").scope, Scope::Hook);
 	assert_eq!(find("FS005", "wipe").severity, Severity::High);
+	// Refinements from triaging polkadot-sdk (see docs/POLKADOT_SDK_TRIAGE.md):
+	// a documented permissionless call and a proof-carrying expect are review items, not alarms,
+	assert_eq!(find("FS005", "reap").severity, Severity::Low);
+	assert_eq!(find("FS001", "reap").severity, Severity::Low);
+	// and iteration guarded by a weight meter is not a chain-halting hook.
+	assert_eq!(find("FS007", "on_idle").severity, Severity::Medium);
 }
 
 #[test]

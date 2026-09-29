@@ -23,6 +23,16 @@ pub mod pallet {
 			assert!(T::MaxMembers::get() > 0, "need members");
 		}
 
+		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+			// One item per block: bounded by `.next()`.
+			if let Some(who) = Scores::<T>::iter_keys().next() {
+				Scores::<T>::remove(&who);
+			}
+			#[cfg(test)]
+			let _ = Members::<T>::get().first().unwrap();
+			T::DbWeight::get().reads_writes(1, 1)
+		}
+
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			assert_eq!(Members::<T>::get().len(), Members::<T>::get().len());

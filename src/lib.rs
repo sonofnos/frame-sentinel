@@ -17,10 +17,33 @@ use std::{
 };
 
 /// Files that never run in the on-chain runtime, by name.
-const SKIP_FILES: [&str; 4] = ["tests.rs", "mock.rs", "benchmarking.rs", "weights.rs"];
+const SKIP_FILES: [&str; 8] = [
+	"tests.rs",
+	"mock.rs",
+	"benchmarking.rs",
+	"weights.rs",
+	"build.rs",
+	"test_utils.rs",
+	"testing_utils.rs",
+	"integration_test.rs",
+];
 /// Directories that never run in the on-chain runtime.
-const SKIP_DIRS: [&str; 7] =
-	["target", "tests", "benches", "fuzz", "examples", "benchmarking", "procedural"];
+const SKIP_DIRS: [&str; 14] = [
+	"target",
+	"tests",
+	"test",
+	"benches",
+	"fuzz",
+	"examples",
+	"benchmarking",
+	"procedural",
+	"mock",
+	"mock-network",
+	"conformance_tests",
+	"test-utils",
+	"test_utils",
+	"integration-tests",
+];
 
 #[derive(Debug, Default)]
 pub struct Scan {
@@ -130,6 +153,7 @@ fn collect_rs(path: &Path, out: &mut Vec<PathBuf>) {
 		} else if entry.extension().is_some_and(|e| e == "rs")
 			&& !SKIP_FILES.contains(&name.as_str())
 			&& !name.ends_with("_tests.rs")
+			&& !name.ends_with("_test.rs")
 		{
 			out.push(entry);
 		}

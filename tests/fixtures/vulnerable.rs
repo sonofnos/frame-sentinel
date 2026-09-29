@@ -84,6 +84,31 @@ pub mod pallet {
 			// Forwarding the origin counts as handling it.
 			Self::do_delegated(origin)
 		}
+
+		/// Remove an expired score. Can be called by anyone once the score has expired.
+		#[pallet::call_index(5)]
+		#[pallet::weight(T::WeightInfo::reap())]
+		pub fn reap(_origin: OriginFor<T>, who: T::AccountId) -> DispatchResult { // expect: FS005
+			let members = Members::<T>::get();
+			let first = members.first().expect("checked non-empty above; qed"); // expect: FS001
+			Scores::<T>::remove(first);
+			Scores::<T>::remove(&who);
+			Ok(())
+		}
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_idle(_n: BlockNumberFor<T>, limit: Weight) -> Weight {
+			let mut meter = WeightMeter::with_limit(limit);
+			for (who, _) in Scores::<T>::iter() { // expect: FS007
+				if meter.try_consume(T::DbWeight::get().writes(1)).is_err() {
+					break;
+				}
+				Scores::<T>::remove(&who);
+			}
+			meter.consumed()
+		}
 	}
 
 	impl<T: Config> Pallet<T> {
