@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  SDK_TAG: polkadot-stable2606-2
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  polkadot-sdk:
+    name: scan polkadot-sdk FRAME pallets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release
+      - name: Fetch substrate/frame at ${{ env.SDK_TAG }}
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse --branch "$SDK_TAG" \
+            https://github.com/paritytech/polkadot-sdk sdk
+          git -C sdk sparse-checkout set substrate/frame
+      - name: Scan
+        run: |
+          cd sdk
+          ../target/release/frame-sentinel substrate/frame --fail-on never --format json --output ../sdk-findings.json
+          ../target/release/frame-sentinel substrate/frame --fail-on never --format sarif --output ../sdk-findings.sarif
+          ../target/release/frame-sentinel substrate/frame --fail-on never > ../sdk-findings.txt
+          { echo '```'; tail -15 ../sdk-findings.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: polkadot-sdk-findings
+          path: sdk-findings.*
